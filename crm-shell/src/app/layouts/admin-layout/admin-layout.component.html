@@ -1,0 +1,13 @@
+<!-- app/layouts/admin-layout/admin-layout.component.html -->
+<mat-sidenav-container>
+  <mat-sidenav #sidenav mode="over" [fixedInViewport]="true">
+    <!-- Menu lateral -->
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <app-topbar (toggleSidenav)="sidenav.toggle()"></app-topbar>
+    <div class="p-4 md:p-6">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
