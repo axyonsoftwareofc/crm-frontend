@@ -1,7 +1,7 @@
 // src/features/campanhas/components/campanha-form/campanha-form.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatStepperModule } from '@angular/material/stepper';
+import { MatStepperModule, MatStepper } from '@angular/material/stepper';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -158,7 +158,11 @@ import { Empresa } from '../../../../core/models/empresa.model';
                 <!-- Orçamento -->
                 <mat-form-field class="w-full">
                   <mat-label>Orçamento (R$)</mat-label>
-                  <input matInput type="number" formControlName="orcamento" placeholder="5000">
+                  <input matInput
+                         type="number"
+                         formControlName="orcamento"
+                         placeholder="5000"
+                         (input)="formatarOrcamento($event)">
                   <mat-icon matPrefix class="text-gray-400 mr-2">attach_money</mat-icon>
                 </mat-form-field>
 
@@ -223,9 +227,7 @@ import { Empresa } from '../../../../core/models/empresa.model';
                       <mat-icon class="text-blue-600">calendar_today</mat-icon>
                       <div>
                         <p class="font-medium text-gray-800">Duração Estimada</p>
-                        <p class="text-gray-600 text-sm">
-                          {{calcularDuracao()}}
-                        </p>
+                        <p class="text-gray-600 text-sm">{{calcularDuracao()}}</p>
                       </div>
                     </div>
                   </div>
@@ -321,13 +323,13 @@ import { Empresa } from '../../../../core/models/empresa.model';
                     <div class="p-4 bg-blue-50 rounded-lg">
                       <p class="text-sm text-blue-600">Orçamento</p>
                       <p class="text-xl font-bold text-gray-900">
-                        R$ {{passo1Form.get('orcamento')?.value?.toLocaleString('pt-BR') || '0'}}
+                        R$ {{(passo1Form.get('orcamento')?.value || 0) | number:'1.0-0'}}
                       </p>
                     </div>
                     <div class="p-4 bg-green-50 rounded-lg">
                       <p class="text-sm text-green-600">Meta Alcance</p>
                       <p class="text-xl font-bold text-gray-900">
-                        {{passo2Form.get('metaAlcance')?.value?.toLocaleString('pt-BR') || '0'}}
+                        {{(passo2Form.get('metaAlcance')?.value || 0) | number:'1.0-0'}}
                       </p>
                     </div>
                     <div class="p-4 bg-purple-50 rounded-lg">
@@ -347,9 +349,9 @@ import { Empresa } from '../../../../core/models/empresa.model';
                       <mat-icon class="text-amber-600">calendar_today</mat-icon>
                       <div>
                         <p class="font-medium text-gray-800">
-                          {{passo2Form.get('dataInicio')?.value ? (passo2Form.get('dataInicio')?.value | date:'dd/MM/yyyy') : 'Não definida'}}
+                          {{ (passo2Form.get('dataInicio')?.value ? formatarData(passo2Form.get('dataInicio')?.value) : 'Não definida') }}
                           até
-                          {{passo2Form.get('dataFim')?.value ? (passo2Form.get('dataFim')?.value | date:'dd/MM/yyyy') : 'Não definida'}}
+                          {{ (passo2Form.get('dataFim')?.value ? formatarData(passo2Form.get('dataFim')?.value) : 'Não definida') }}
                         </p>
                         <p class="text-gray-600 text-sm">{{calcularDuracao()}}</p>
                       </div>
@@ -393,6 +395,8 @@ import { Empresa } from '../../../../core/models/empresa.model';
   `
 })
 export class CampanhaFormComponent implements OnInit {
+  @ViewChild('stepper') private stepper!: MatStepper;
+
   passo1Form: FormGroup;
   passo2Form: FormGroup;
   isEdicao = false;
@@ -406,7 +410,8 @@ export class CampanhaFormComponent implements OnInit {
     private campanhaService: CampanhaService,
     private route: ActivatedRoute,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdRef: ChangeDetectorRef
   ) {
     // Formulário Passo 1
     this.passo1Form = this.fb.group({
@@ -444,10 +449,14 @@ export class CampanhaFormComponent implements OnInit {
   carregarEmpresas() {
     this.empresaService.listar(0, 100).subscribe({
       next: (response) => {
-        this.empresas = response.content;
+        this.empresas = response.content || [];
+        this.cdRef.detectChanges();
       },
       error: (error) => {
+        console.error('Erro ao carregar empresas:', error);
+        this.empresas = [];
         this.snackBar.open('Erro ao carregar empresas', 'Fechar', { duration: 3000 });
+        this.cdRef.detectChanges();
       }
     });
   }
@@ -477,6 +486,7 @@ export class CampanhaFormComponent implements OnInit {
         });
 
         this.loading = false;
+        this.cdRef.detectChanges();
       },
       error: (error) => {
         this.snackBar.open('Erro ao carregar campanha', 'Fechar', { duration: 3000 });
@@ -489,41 +499,84 @@ export class CampanhaFormComponent implements OnInit {
   // Navegação entre passos
   avancarParaPasso2() {
     if (this.passo1Form.valid) {
-      // Lógica para avançar para o passo 2
-      // O stepper já cuida disso automaticamente
+      this.stepper.next();
+    } else {
+      Object.keys(this.passo1Form.controls).forEach(key => {
+        this.passo1Form.get(key)?.markAsTouched();
+      });
     }
   }
 
   voltarParaPasso1() {
-    // Lógica para voltar para o passo 1
+    this.stepper.previous();
   }
 
   avancarParaPasso3() {
     if (this.passo2Form.valid) {
-      // Lógica para avançar para o passo 3
+      this.stepper.next();
+    } else {
+      Object.keys(this.passo2Form.controls).forEach(key => {
+        this.passo2Form.get(key)?.markAsTouched();
+      });
     }
   }
 
   voltarParaPasso2() {
-    // Lógica para voltar para o passo 2
+    this.stepper.previous();
+  }
+
+  // Formatação do orçamento
+  formatarOrcamento(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value.replace(/\D/g, '');
+
+    if (value) {
+      const numericValue = parseFloat(value);
+      this.passo1Form.get('orcamento')?.setValue(numericValue, { emitEvent: false });
+    } else {
+      this.passo1Form.get('orcamento')?.setValue(null, { emitEvent: false });
+    }
   }
 
   // Métodos auxiliares
   calcularDuracao(): string {
-    const inicio = this.passo2Form.get('dataInicio')?.value;
-    const fim = this.passo2Form.get('dataFim')?.value;
+    const inicioControl = this.passo2Form.get('dataInicio');
+    const fimControl = this.passo2Form.get('dataFim');
+
+    const inicio = inicioControl?.value;
+    const fim = fimControl?.value;
 
     if (!inicio || !fim) {
       return 'Período não definido';
     }
 
-    const diffMs = new Date(fim).getTime() - new Date(inicio).getTime();
+    const inicioDate = typeof inicio === 'string' ? new Date(inicio) : inicio;
+    const fimDate = typeof fim === 'string' ? new Date(fim) : fim;
+
+    if (isNaN(inicioDate.getTime()) || isNaN(fimDate.getTime())) {
+      return 'Datas inválidas';
+    }
+
+    const diffMs = fimDate.getTime() - inicioDate.getTime();
+
+    if (diffMs < 0) {
+      return 'Data fim deve ser maior que data início';
+    }
+
     const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDias === 1) return '1 dia';
     if (diffDias < 30) return `${diffDias} dias`;
     if (diffDias < 365) return `${Math.floor(diffDias / 30)} meses`;
     return `${Math.floor(diffDias / 365)} anos`;
+  }
+
+  formatarData(data: Date | string | null): string {
+    if (!data) return '';
+
+    const dateObj = typeof data === 'string' ? new Date(data) : data;
+
+    return dateObj.toLocaleDateString('pt-BR');
   }
 
   getNomeEmpresa(empresaId: number): string {
@@ -561,10 +614,13 @@ export class CampanhaFormComponent implements OnInit {
 
     this.loading = true;
 
-    // Combina dados dos dois passos
+    const dataInicio = this.passo2Form.get('dataInicio')?.value;
+    const dataFim = this.passo2Form.get('dataFim')?.value;
+
     const campanhaData: Campanha = {
       ...this.passo1Form.value,
-      ...this.passo2Form.value,
+      dataInicio: dataInicio ? new Date(dataInicio).toISOString() : null,
+      dataFim: dataFim ? new Date(dataFim).toISOString() : null,
       metricas: {
         alcance: this.passo2Form.get('metaAlcance')?.value || 0,
         conversoes: this.passo2Form.get('metaConversoes')?.value || 0,

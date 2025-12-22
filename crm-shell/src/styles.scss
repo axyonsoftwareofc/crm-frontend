@@ -86,3 +86,73 @@ body {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+// Overlays e menus
+.mat-mdc-select-panel,
+.mat-mdc-menu-panel,
+.mat-mdc-dialog-container .mat-mdc-dialog-surface,
+.mat-mdc-datepicker-popup,
+.mat-mdc-autocomplete-panel {
+  background-color: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: none !important;
+  margin-top: 8px !important;
+}
+
+// Opções dos selects
+.mat-mdc-option {
+  min-height: 48px !important;
+  color: #374151 !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.mat-mdc-option:hover:not(.mat-mdc-option-disabled),
+.mat-mdc-option.mat-mdc-selected:not(.mat-mdc-option-disabled) {
+  background-color: #f3f4f6 !important;
+}
+
+// Datepicker
+.mat-calendar {
+  background-color: white !important;
+  border-radius: 12px !important;
+}
+
+// Form fields com aparência mais nítida
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: 12px;
+  --mdc-outlined-text-field-outline-width: 1px;
+  --mdc-outlined-text-field-outline-color: #d1d5db;
+}
+
+.mat-mdc-form-field:hover {
+  --mdc-outlined-text-field-outline-color: #9ca3af;
+}
+
+.mat-mdc-form-field.mat-focused {
+  --mdc-outlined-text-field-outline-color: #0ea5e9;
+  --mdc-outlined-text-field-outline-width: 2px;
+}
+
+// Botões dos selects e datepickers
+.mat-mdc-select-arrow,
+.mat-datepicker-toggle-default-icon {
+  color: #6b7280 !important;
+}
+
+// Remove transparência de fundo dos overlays
+.cdk-overlay-container .cdk-overlay-pane {
+  background-color: transparent !important;
+}
+
+.cdk-overlay-backdrop {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+// Tooltips
+.mat-mdc-tooltip {
+  background-color: #1f2937 !important;
+  font-size: 12px !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+}

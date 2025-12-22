@@ -1,5 +1,4 @@
-// src/features/campanhas/components/campanha-lista/campanha-lista.component.ts - VERSÃO CORRIGIDA
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -238,7 +237,9 @@ import { Campanha } from '../../../../core/models/campanha.model';
           <div class="w-24 h-24 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-6">
             <mat-icon class="text-4xl text-purple-500">campaign</mat-icon>
           </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-2">Nenhuma campanha encontrada</h3>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">
+            {{temFiltrosAtivos() ? 'Nenhuma campanha encontrada' : 'Nenhuma campanha ainda'}}
+          </h3>
           <p class="text-gray-600 mb-6">
             {{temFiltrosAtivos() ? 'Tente alterar os filtros aplicados' : 'Comece criando sua primeira campanha'}}
           </p>
@@ -319,7 +320,8 @@ export class CampanhaListaComponent implements OnInit {
   constructor(
     private campanhaService: CampanhaService,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    private cdRef: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -328,35 +330,50 @@ export class CampanhaListaComponent implements OnInit {
   }
 
   carregarCampanhas() {
-    this.loading = true;
+      this.loading = true;
+      this.cdRef.detectChanges(); // ← Força atualização imediata
 
-    this.campanhaService.listar(0, 10, this.searchTerm)
-      .subscribe({
-        next: (response) => {
-          let campanhasFiltradas = response.content;
+      this.campanhaService.listar(0, 10, this.searchTerm)
+        .subscribe({
+          next: (response) => {
+            let campanhasFiltradas = response.content;
 
-          // Aplicar filtros locais
-          if (this.filtroStatus) {
-            campanhasFiltradas = campanhasFiltradas.filter(c => c.status === this.filtroStatus);
+            if (this.filtroStatus) {
+              campanhasFiltradas = campanhasFiltradas.filter(c => c.status === this.filtroStatus);
+            }
+
+            if (this.filtroTipo) {
+              campanhasFiltradas = campanhasFiltradas.filter(c => c.tipo === this.filtroTipo);
+            }
+
+            this.campanhas = campanhasFiltradas;
+            this.loading = false;
+            this.cdRef.detectChanges(); // ← Força atualização após carregar
+          },
+          error: (error) => {
+            this.snackBar.open('Erro ao carregar campanhas', 'Fechar', { duration: 3000 });
+            this.loading = false;
+            this.cdRef.detectChanges(); // ← Força atualização mesmo com erro
           }
-
-          if (this.filtroTipo) {
-            campanhasFiltradas = campanhasFiltradas.filter(c => c.tipo === this.filtroTipo);
-          }
-
-          this.campanhas = campanhasFiltradas;
-          this.loading = false;
-        },
-        error: (error) => {
-          this.snackBar.open('Erro ao carregar campanhas', 'Fechar', { duration: 3000 });
-          this.loading = false;
-        }
-      });
-  }
+        });
+    }
 
   carregarStats() {
-    const stats = this.campanhaService.getStats();
-    this.stats = stats;
+    this.campanhaService.getStats().subscribe({
+      next: (stats) => {
+        this.stats = stats;
+      },
+      error: (error) => {
+        console.error('Erro ao carregar stats:', error);
+        this.stats = {
+          total: 0,
+          emAndamento: 0,
+          agendadas: 0,
+          concluidas: 0,
+          orcamentoTotal: 0
+        };
+      }
+    });
   }
 
   filtrar() {
