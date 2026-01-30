@@ -1,4 +1,3 @@
-// src/app/app.routes.ts - VERSÃO COMPLETA E CORRETA
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
