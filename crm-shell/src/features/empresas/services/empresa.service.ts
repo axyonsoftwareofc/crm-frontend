@@ -45,7 +45,7 @@ export class EmpresaService {
   }
 
   atualizar(id: number, empresa: Partial<Empresa>): Observable<Empresa> {
-    return this.http.put<Empresa>(`http://localhost:8080/api/${this.endpoint}/${id}`, empresa);
+    return this.api.put<Empresa>(`${this.endpoint}/${id}`, empresa);
   }
 
   remover(id: number): Observable<void> {
